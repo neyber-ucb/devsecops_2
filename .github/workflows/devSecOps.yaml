@@ -1,0 +1,64 @@
+name: DevSecOps CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+
+jobs:
+  devsecops:
+    runs-on: ubuntu-latest
+
+    steps:
+    # 1. Obtener código
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    # 2. Coding - SCA
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 18
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: SCA – Dependency vulnerability scan
+      run: npm audit --audit-level=high
+
+    # 3. CI – Lint & Tests
+    - name: Lint code
+      run: npm run lint
+
+    - name: Run tests
+      run: npm test
+
+    # 4. SAST – Análisis estático de código
+    - name: Install Semgrep
+      run: |
+        python3 -m pip install --upgrade pip
+        pip install semgrep
+
+    - name: SAST – Custom rules scan
+      run: semgrep --config=rules/ --severity=ERROR .
+
+    - name: SAST – Auto config scan
+      run: semgrep --config=auto --severity=ERROR .
+
+    # 5. Smoke test
+    - name: Start application
+      run: |
+        npm start &
+        sleep 5
+
+    - name: Smoke test endpoints
+      run: |
+        curl -f http://localhost:3000/admin
+        curl -f http://localhost:3000/calc?expr=1
+        curl -f -X POST http://localhost:3000/update
+        curl -f http://localhost:3000/exec?cmd=echo+ok
+
+    # 6. Limpieza
+    - name: Shutdown application
+      if: always()
+      run: kill $(lsof -t -i:3000) || true

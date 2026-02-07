@@ -1,0 +1,6 @@
+rules:
+  - id: no-eval
+    message: "Uso de eval detectado: riesgo de ejecución de código"
+    severity: ERROR
+    languages: [javascript]
+    pattern: eval(...)

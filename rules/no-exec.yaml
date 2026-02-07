@@ -1,0 +1,6 @@
+rules:
+  - id: no-exec
+    message: "Uso de exec detectado"
+    severity: ERROR
+    languages: [javascript]
+    pattern: exec(...)
